@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Animación en 16 escenas que explica, sin matemáticas, los números primos, la Hipótesis de Riemann y el anuncio de 2026 que afirma haberla demostrado.">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Riemann paso a paso</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a single "pizarra" player — stage on top, caption below, scene index at the bottom */
+:root{
+  --bg:#EEF1F6; --panel:#FFFFFF; --fg:#18203A; --muted:#5D6787; --grid:#C9D0E0;
+  --prime:#C98500; --zero:#4B3FD6; --bad:#D23C3C; --ok:#1E8A5A; --soft:rgba(75,63,214,.12);
+  --f-disp:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1324; --panel:#171C33; --fg:#E7EAF5; --muted:#99A2C4; --grid:#2C3354;
+  --prime:#F2B634; --zero:#9C93FF; --bad:#FF6F6F; --ok:#4FD39A; --soft:rgba(156,147,255,.16); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1324; --panel:#171C33; --fg:#E7EAF5; --muted:#99A2C4; --grid:#2C3354;
+  --prime:#F2B634; --zero:#9C93FF; --bad:#FF6F6F; --ok:#4FD39A; --soft:rgba(156,147,255,.16); color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+header{display:grid;gap:6px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--zero)}
+h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(28px,5vw,44px);line-height:1.08;margin:0;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:62ch}
+.stage{background:var(--panel);border-radius:16px;border:1px solid var(--grid);overflow:hidden}
+canvas{display:block;width:100%;aspect-ratio:5/3}
+.bar{height:3px;background:var(--grid)}
+.bar i{display:block;height:100%;width:0;background:var(--zero)}
+.cap{display:grid;gap:6px;min-height:150px}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.cap h2{font-family:var(--f-disp);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;line-height:1.15;text-wrap:balance}
+.cap p{margin:0;max-width:66ch;font-size:18px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:inherit;font-size:15px;color:var(--fg);background:var(--panel);border:1px solid var(--grid);border-radius:10px;padding:9px 16px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--zero);outline-offset:2px}
+button.main{background:var(--zero);border-color:var(--zero);color:var(--panel);font-weight:700}
+label.auto{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--muted);margin-left:auto}
+nav{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+nav section{display:grid;gap:4px;align-content:start}
+nav h3{font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+nav button{text-align:left;padding:6px 10px;border-color:transparent;background:transparent;font-size:15px;display:flex;gap:10px}
+nav button b{font-family:var(--f-mono);font-weight:500;color:var(--muted);min-width:2ch}
+nav button[aria-current="true"]{background:var(--soft);color:var(--fg)}
+nav button[aria-current="true"] b{color:var(--zero)}
+.note{font-size:14px;color:var(--muted);border-top:1px solid var(--grid);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Explicación animada · 16 escenas</span>
+    <h1>La Hipótesis de Riemann, paso a paso</h1>
+    <p>Qué son los primos, qué dice la hipótesis, y qué afirma el documento de noviembre de 2026 que asegura haberla demostrado. No hace falta saber matemáticas.</p>
+  </header>
+
+  <div class="stage">
+    <canvas id="cv" role="img" aria-label="Animación de la escena actual"></canvas>
+    <div class="bar"><i id="bar"></i></div>
+  </div>
+
+  <div class="cap" aria-live="polite">
+    <span class="step" id="step">Escena 1 de 16</span>
+    <h2 id="ct"></h2>
+    <p id="cb"></p>
+  </div>
+
+  <div class="controls">
+    <button id="prev" aria-label="Escena anterior">← Anterior</button>
+    <button id="play" class="main">Pausa</button>
+    <button id="next" aria-label="Escena siguiente">Siguiente →</button>
+    <button id="again">Repetir escena</button>
+    <label class="auto"><input type="checkbox" id="auto" checked> Avanzar solo</label>
+  </div>
+
+  <nav id="nav"></nav>
+
+  <p class="note">Esta explicación resume una afirmación todavía no revisada por expertos. Los ceros y los conteos de primos de las gráficas son reales y se calculan en tu navegador.</p>
+</div>
+
+<script>
+const S = [
+ {g:0,n:"Los números de siempre",d:7,
+  t:"Empezamos con algo que conoces: los números",
+  b:"1, 2, 3, 4… Entre ellos hay unos especiales, los números primos (en amarillo). Toda la historia va de ellos."},
+ {g:0,n:"¿Qué es un primo?",d:11,
+  t:"Un primo es un número que no se puede «partir»",
+  b:"Con 12 bolitas puedes formar un rectángulo de 3 × 4. Con 7 bolitas lo intentes como lo intentes siempre sobra una: solo caben en una fila. Por eso 7 es primo y 12 no."},
+ {g:0,n:"Cribar los primos",d:11,
+  t:"Cómo se encuentran: tachando múltiplos",
+  b:"Tachamos los múltiplos de 2, luego los de 3, de 5 y de 7. Lo que queda sin tachar son los primos. Es la «criba de Eratóstenes», de hace más de 2.000 años."},
+ {g:0,n:"Parecen al azar",d:11,
+  t:"El problema: aparecen sin un patrón claro",
+  b:"A veces salen dos primos casi pegados (11 y 13) y a veces hay un hueco enorme (de 113 a 127 no hay ninguno). Nadie sabe predecir exactamente dónde cae el siguiente."},
+ {g:0,n:"Contarlos: una escalera",d:9,
+  t:"Si los contamos, sale una escalera",
+  b:"Avanzamos por los números y subimos un escalón cada vez que encontramos un primo. Hasta 100 hay 25 primos, así que la escalera llega a 25."},
+ {g:1,n:"Una curva que predice",d:11,
+  t:"De lejos, la escalera parece una curva suave",
+  b:"Si nos alejamos hasta 100.000, la escalera (amarillo) casi coincide con una curva suave (morado) que se puede calcular con una fórmula. La fórmula acierta mucho, pero no del todo."},
+ {g:1,n:"El túnel del error",d:11,
+  t:"La gran pregunta: ¿cuánto se equivoca la curva?",
+  b:"La línea amarilla es el error: la diferencia entre la curva y los primos de verdad. La Hipótesis de Riemann equivale a decir que ese error nunca se sale del túnel morado, aunque sigamos contando para siempre."},
+ {g:1,n:"Las ondas de Riemann",d:13,
+  t:"La idea genial de Riemann: sumar ondas",
+  b:"En 1859 Riemann vio que se puede reconstruir la escalera de primos empezando con una línea recta y sumándole ondas. Cada onda corrige un poco. Mira cómo, al sumar 30 ondas, la línea se convierte en escalera."},
+ {g:1,n:"Cada onda tiene un «cero»",d:10,
+  t:"Cada onda viene de un punto llamado «cero»",
+  b:"Cada onda nace de un punto especial, un «cero» de la función de Riemann. La altura del cero dice lo rápido que vibra su onda. Su posición de izquierda a derecha dice lo grande que se hace."},
+ {g:1,n:"La hipótesis",d:12,
+  t:"La hipótesis: todos los ceros están en la línea del medio",
+  b:"Si todos los ceros están en la línea central, todas las ondas crecen despacio y el error queda dentro del túnel. Si un solo cero se desviara a la derecha (rojo), su onda crecería sin control. Se han comprobado billones de ceros y todos están en la línea, pero nadie lo había demostrado para todos."},
+ {g:2,n:"Lo que afirma el PDF",d:9,
+  t:"Lo que dice el documento",
+  b:"El autor, un matemático que trabajó con Claude (una IA), asegura haber demostrado la hipótesis, y también una versión más general. Dice que lo terminó el 16 de noviembre de 2026 y que la prueba está comprobada por ordenador."},
+ {g:2,n:"La pista: multiplicidad",d:13,
+  t:"La pista: puntos que «cuentan doble»",
+  b:"Un truco antiguo (de Stepanov) para contar puntos: se construye una curva que toca el eje en cada punto. Si lo toca de forma «aplastada», ese punto cuenta doble o triple. Y como una curva de cierto tamaño solo puede tocar el eje un número limitado de veces, caben pocos puntos: así se acota el error."},
+ {g:2,n:"El obstáculo",d:10,
+  t:"El obstáculo: con números enteros no funciona",
+  b:"El truco ya resolvió una versión de juguete del problema, en un «mundo de reloj» donde los números dan la vuelta. Allí se puede «derivar», que es lo que permite contar doble. Con los números enteros normales no hay forma obvia de hacerlo: ¿qué sería la derivada de 7?"},
+ {g:2,n:"La cadena",d:12,
+  t:"La solución que proponen: una cadena de eslabones",
+  b:"Su idea es imitar ese «contar doble» encadenando transformaciones (los «theta lifts»). Cada eslabón añade un poco más de multiplicidad. El momento clave que destaca el autor es la sugerencia de Claude sobre la longitud de la cadena: √X eslabones, la raíz cuadrada del tamaño del problema."},
+ {g:2,n:"Comprobado por Lean",d:10,
+  t:"Comprobado por ordenador con Lean",
+  b:"La prueba escrita ocuparía más de 250.000 páginas ilegibles, así que el autor publica solo el código Lean. Lean es un programa que revisa que cada paso se siga del anterior. Ojo: no puede saber si el punto de partida dice de verdad lo que queremos; eso lo tienen que mirar personas expertas."},
+ {g:2,n:"¿Y ahora qué?",d:10,
+  t:"¿Está resuelto? Todavía no se sabe",
+  b:"Por ahora es un anuncio. Falta que expertos independientes revisen el código, que exista una versión legible y que la comunidad la acepte. Yo no he podido comprobarlo, y como soy Claude, la IA que aparece en la historia, conviene que te fíes más de los expertos que de mí."}
+];
+const GROUPS=["Los primos","La hipótesis","El documento"];
+
+/* ---------- data ---------- */
+const N=100000, comp=new Uint8Array(N+1), spf=new Int32Array(N+1);
+comp[0]=comp[1]=1;
+for(let i=2;i<=N;i++){ if(!comp[i]){ spf[i]=i; for(let j=i*i;j<=N;j+=i){ if(!comp[j]){comp[j]=1;spf[j]=i;} } } }
+const pc=new Int32Array(N+1); {let c=0; for(let i=0;i<=N;i++){ if(!comp[i]) c++; pc[i]=c; }}
+const li=new Float64Array(N+1); li[2]=1.045; for(let i=3;i<=N;i++) li[i]=li[i-1]+(1/Math.log(i-1)+1/Math.log(i))/2;
+const psi=new Float64Array(61); for(let n=2;n<=60;n++){ let m=n,p=spf[n]; while(m%p===0) m/=p; psi[n]=psi[n-1]+(m===1?Math.log(p):0); }
+const G=[14.134725,21.02204,25.010858,30.424876,32.935062,37.586178,40.918719,43.327073,48.005151,49.773832,52.970321,56.446248,59.347044,60.831779,65.112544,67.079811,69.546402,72.067158,75.704691,77.14484,79.337375,82.910381,84.735493,87.425275,88.809111,92.491899,94.651344,95.870634,98.831194,101.317851];
+function psiApprox(x,k){
+  const L=Math.log(x), r=Math.sqrt(x); let s=x-Math.log(2*Math.PI)-0.5*Math.log(1-1/(x*x));
+  for(let j=0;j<Math.ceil(k)&&j<G.length;j++){ const g=G[j], w=Math.min(1,k-j); s-=w*2*r*(0.5*Math.cos(g*L)+g*Math.sin(g*L))/(0.25+g*g); }
+  return s;
+}
+
+/* ---------- drawing helpers ---------- */
+const W=1000,H=600, cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let fs=1, K={};
+function resize(){ const r=cv.getBoundingClientRect(), d=devicePixelRatio||1; cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d); ctx.setTransform(r.width/W*d,0,0,r.width/W*d,0,0); fs=Math.min(1.7,Math.max(1,760/r.width)); }
+function tokens(){ const c=getComputedStyle(document.documentElement), v=n=>c.getPropertyValue(n).trim();
+  K={bg:v('--panel'),fg:v('--fg'),mut:v('--muted'),grid:v('--grid'),prime:v('--prime'),zero:v('--zero'),bad:v('--bad'),ok:v('--ok'),soft:v('--soft'),disp:v('--f-disp'),body:v('--f-body'),mono:v('--f-mono')}; }
+const cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)), P=(t,a,b)=>cl((t-a)/(b-a)), E=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2, Lr=(a,b,k)=>a+(b-a)*k;
+function font(o){ return `${o.w||400} ${Math.round((o.s||22)*fs)}px ${o.f||K.body}`; }
+function T(s,x,y,o={}){ ctx.save(); ctx.globalAlpha*=(o.a??1); ctx.fillStyle=o.c||K.fg; ctx.font=font(o); ctx.textAlign=o.al||'left'; ctx.textBaseline=o.bl||'middle'; ctx.fillText(s,x,y); ctx.restore(); }
+function wrap(s,x,y,mw,lh,o={}){ ctx.save(); ctx.font=font(o); const out=[]; let line=''; for(const w of s.split(' ')){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>mw&&line){out.push(line);line=w;} else line=t; } out.push(line); ctx.restore(); out.forEach((l,i)=>T(l,x,y+i*lh*fs,o)); return out.length; }
+function path(pts,c,w=2,dash){ if(pts.length<2) return; ctx.save(); ctx.strokeStyle=c; ctx.lineWidth=w; ctx.lineJoin='round'; ctx.lineCap='round'; if(dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(const p of pts) ctx.lineTo(p[0],p[1]); ctx.stroke(); ctx.restore(); }
+function dot(x,y,r,c,a=1){ ctx.save(); ctx.globalAlpha*=a; ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function ring(x,y,r,c,w=2,a=1){ ctx.save(); ctx.globalAlpha*=a; ctx.strokeStyle=c; ctx.lineWidth=w; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
+function box(x,y,w,h,r,fill,stroke,a=1){ ctx.save(); ctx.globalAlpha*=a; ctx.beginPath(); ctx.roundRect(x,y,w,h,r); if(fill){ctx.fillStyle=fill;ctx.fill();} if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();} ctx.restore(); }
+function axes(x0,y0,w,h,xt,yt,X,Y){ path([[x0,y0],[x0,y0+h],[x0+w,y0+h]],K.grid,1.5);
+  xt.forEach(v=>T(v.toLocaleString('es-ES'),X(v),y0+h+20,{s:15,c:K.mut,al:'center',f:K.mono}));
+  yt.forEach(v=>{ T(v.toLocaleString('es-ES'),x0-10,Y(v),{s:15,c:K.mut,al:'right',f:K.mono}); path([[x0,Y(v)],[x0+w,Y(v)]],K.grid,.6,[3,5]); }); }
+
+/* number grid shared by scenes 1 and 3 */
+function grid(t,mode){
+  const c=50,x0=250,y0=50, at={2:.8,3:3,5:5,7:6.6};
+  for(let n=1;n<=100;n++){
+    const i=n-1, x=x0+(i%10)*c+c/2, y=y0+Math.floor(i/10)*c+c/2, prime=!comp[n];
+    let a=mode==='in'?P(t,n*.025,n*.025+.4):1, crossed=false, glow=0;
+    if(mode==='in') glow=prime?E(P(t,3.2,4.2)):0;
+    else { if(n===1) crossed=true; else if(!prime){ const p=spf[n]; crossed=t>at[p]+(n/p)*.035; } glow=prime?E(P(t,8.3,9.2)):0; if(prime&&at[n]!==undefined&&t>at[n]-.2) glow=Math.max(glow,1); }
+    if(glow) box(x-21,y-21,42,42,10,K.prime,null,glow*.28);
+    T(String(n),x,y,{s:20,a:a*(crossed?.32:1),c:prime&&glow>.5?K.prime:K.fg,w:prime&&glow>.5?700:400,al:'center',f:K.mono});
+    if(crossed) path([[x-14,y+10],[x+14,y-10]],K.bad,2);
+  }
+  if(mode==='in'){ T("1 a 100",130,300,{s:22,c:K.mut,al:'center',a:P(t,.3,1)}); T("primos",870,300,{s:24,c:K.prime,w:700,al:'center',a:P(t,3.6,4.4)}); }
+  else { const cur=t<3?2:t<5?3:t<6.6?5:7; if(t>.4&&t<8.2) T(`Tachando múltiplos de ${cur}`,870,300,{s:22,c:K.bad,al:'center',w:700});
+    if(t>8.6) T(`Quedan ${pc[100]} primos`,870,300,{s:24,c:K.prime,w:700,al:'center',a:P(t,8.6,9.4)}); T("1 no cuenta",130,300,{s:18,c:K.mut,al:'center',a:P(t,.2,.8)}); }
+}
+
+/* ---------- scenes ---------- */
+const D=[
+ t=>grid(t,'in'),
+ t=>{ // 12 vs 7
+  const k=E(P(t,1,2.5));
+  for(let i=0;i<12;i++){ const ax=280+(i-5.5)*30, ay=300, bx=280+(i%4-1.5)*44, by=300+(Math.floor(i/4)-1)*44; dot(Lr(ax,bx,k),Lr(ay,by,k),13,K.zero); }
+  T("12",280,140,{s:40,w:700,al:'center',f:K.disp});
+  T("12 = 3 × 4: ¡rectángulo!",280,460,{s:22,al:'center',c:K.zero,w:700,a:P(t,2.4,3)});
+  const ka=E(P(t,3,4.2))-E(P(t,4.9,5.7)), kb=E(P(t,6,7.2))-E(P(t,7.9,8.7));
+  for(let i=0;i<7;i++){ const ax=720+(i-3)*30, ay=300;
+    const a=i<6?[720+(i%3-1)*44,278+Math.floor(i/3)*44]:[720+96,322];
+    const b=i<6?[720+(i%2-.5)*44,256+Math.floor(i/2)*44]:[720+72,344];
+    const x=ax+(a[0]-ax)*ka+(b[0]-ax)*kb, y=ay+(a[1]-ay)*ka+(b[1]-ay)*kb, off=i===6&&(ka>.5||kb>.5);
+    dot(x,y,13,off?K.bad:K.prime); }
+  T("7",720,140,{s:40,w:700,al:'center',f:K.disp});
+  if(ka>.5) T("2 filas… sobra 1",720,460,{s:22,al:'center',c:K.bad});
+  if(kb>.5) T("3 filas… sobra 1",720,460,{s:22,al:'center',c:K.bad});
+  if(t>9) T("solo cabe en una fila: es primo",720,460,{s:22,al:'center',c:K.prime,w:700,a:P(t,9,9.6)});
+ },
+ t=>grid(t,'sieve'),
+ t=>{ // number line
+  const rows=[[0,100,210],[100,200,420]], x0=60, w=880, sc=w/100, reveal=Lr(0,200,E(P(t,0,4)));
+  const X=n=>x0+((n%100)+(n===200?100:0))*sc, row=n=>n<100||n===100&&false?0:1;
+  rows.forEach(([a,b,y])=>{ path([[x0,y],[x0+w,y]],K.grid,2); for(let v=a;v<=b;v+=10) T(String(v),x0+(v-a)*sc,y+30,{s:14,c:K.mut,al:'center',f:K.mono}); });
+  for(let n=2;n<200;n++){ if(comp[n]||n>reveal) continue; const r=n<100?0:1, y=rows[r][2], x=x0+(n-rows[r][0])*sc; path([[x,y-16],[x,y+8]],K.prime,3); }
+  if(reveal<200){ const r=reveal<100?0:1, y=rows[r][2], x=x0+(reveal-rows[r][0])*sc; path([[x,y-40],[x,y+14]],K.zero,2); }
+  const tw=[[11,13],[17,19],[29,31],[41,43],[59,61],[71,73],[101,103],[107,109],[137,139],[149,151],[179,181],[191,193],[197,199]], a1=P(t,5,6);
+  tw.forEach(([p,q])=>{ const r=p<100?0:1, y=rows[r][2]-28, xa=x0+(p-rows[r][0])*sc, xb=x0+(q-rows[r][0])*sc; ctx.save(); ctx.globalAlpha=a1; ctx.strokeStyle=K.zero; ctx.lineWidth=2; ctx.beginPath(); ctx.arc((xa+xb)/2,y+6,(xb-xa)/2+3,Math.PI,0); ctx.stroke(); ctx.restore(); });
+  T("gemelos: separados por 2",x0,rows[0][2]-80,{s:20,c:K.zero,w:700,a:a1});
+  const a2=P(t,7,8), y2=rows[1][2]+60, xa=x0+13*sc, xb=x0+27*sc;
+  if(a2>0){ ctx.save(); ctx.globalAlpha=a2; path([[xa,y2-10],[xa,y2],[xb,y2],[xb,y2-10]],K.bad,2.5); box(xa,rows[1][2]-26,xb-xa,40,6,K.bad,null,.12); ctx.restore(); T("113 → 127: un hueco de 14 sin primos",(xa+xb)/2,y2+28,{s:20,c:K.bad,w:700,al:'center',a:a2}); }
+ },
+ t=>{ // staircase to 100
+  const x0=110,y0=50,w=800,h=460, X=v=>x0+w*v/100, Y=v=>y0+h-h*v/28; axes(x0,y0,w,h,[0,25,50,75,100],[0,5,10,15,20,25],X,Y);
+  const R=Lr(1,100,E(P(t,.5,6.5))), pts=[[X(0),Y(0)]]; let p=0;
+  for(let n=2;n<=R;n++) if(!comp[n]){ pts.push([X(n),Y(p)],[X(n),Y(p+1)]); p++; }
+  pts.push([X(R),Y(p)]); path(pts,K.prime,3.5); dot(X(R),Y(p),7,K.prime);
+  T(`hasta ${Math.floor(R)} → ${p} primos`,X(R)>650?X(R)-16:X(R)+16,Y(p)-30,{s:22,w:700,al:X(R)>650?'right':'left'});
+  T("primos encontrados",x0+10,y0+6,{s:16,c:K.mut}); T("números",x0+w,y0+h-16,{s:16,c:K.mut,al:'right'});
+ },
+ t=>{ // zoom out
+  const Xm=Math.round(Math.exp(Lr(Math.log(100),Math.log(N),E(P(t,1,7))))), ym=li[Xm]*1.12;
+  const x0=110,y0=50,w=800,h=460, X=v=>x0+w*v/Xm, Y=v=>y0+h-h*v/ym;
+  path([[x0,y0],[x0,y0+h],[x0+w,y0+h]],K.grid,1.5);
+  T("0",x0,y0+h+20,{s:15,c:K.mut,al:'center',f:K.mono}); T(Xm.toLocaleString('es-ES'),x0+w,y0+h+20,{s:15,c:K.mut,al:'right',f:K.mono});
+  const st=[],sm=[]; for(let i=0;i<=500;i++){ const v=Math.max(2,Math.floor(Xm*i/500)); st.push([X(v),Y(pc[v])]); sm.push([X(v),Y(li[v])]); }
+  ctx.globalAlpha=P(t,.3,1); path(sm,K.zero,3); ctx.globalAlpha=1; path(st,K.prime,2.5,null);
+  T(`contando hasta ${Xm.toLocaleString('es-ES')}`,x0+20,y0+20,{s:22,w:700});
+  T(`primos reales: ${pc[Xm].toLocaleString('es-ES')}`,x0+20,y0+58,{s:20,c:K.prime,w:700});
+  T(`predicción de la curva: ${Math.round(li[Xm]).toLocaleString('es-ES')}`,x0+20,y0+90,{s:20,c:K.zero,w:700,a:P(t,.3,1)});
+ },
+ t=>{ // error tunnel
+  const x0=110,y0=50,w=800,h=460, xm=N, X=v=>x0+w*v/xm, Y=v=>y0+h/2-h/2*v/200, R=Lr(3000,N,E(P(t,.5,7)));
+  axes(x0,y0,w,h,[0,25000,50000,75000,100000],[-200,-100,0,100,200],X,Y);
+  const up=[],dn=[],er=[]; for(let i=0;i<=400;i++){ const v=Math.round(Lr(2657,R,i/400)), b=Math.sqrt(v)*Math.log(v)/(8*Math.PI); up.push([X(v),Y(b)]); dn.push([X(v),Y(-b)]); er.push([X(v),Y(li[v]-pc[v])]); }
+  ctx.save(); ctx.beginPath(); ctx.moveTo(up[0][0],up[0][1]); up.forEach(p=>ctx.lineTo(p[0],p[1])); dn.slice().reverse().forEach(p=>ctx.lineTo(p[0],p[1])); ctx.closePath(); ctx.fillStyle=K.soft; ctx.fill(); ctx.restore();
+  path(up,K.zero,2); path(dn,K.zero,2); path(er,K.prime,3);
+  T("el túnel que promete Riemann",X(R)-10>x0+300?X(R)-10:x0+300,up[up.length-1][1]-22,{s:19,c:K.zero,w:700,al:'right'});
+  T("error de la curva",x0+20,y0+h/2+60,{s:19,c:K.prime,w:700});
+  T("error",x0-50,y0-20,{s:15,c:K.mut});
+ },
+ t=>{ // waves rebuild staircase
+  const x0=110,y0=50,w=800,h=440, X=v=>x0+w*(v-2)/48, Y=v=>y0+h-h*v/55, k=Lr(0,30,E(P(t,1.5,10)));
+  axes(x0,y0,w,h,[10,20,30,40,50],[0,10,20,30,40,50],X,Y);
+  const st=[]; for(let n=2;n<=50;n++){ st.push([X(n),Y(psi[n-1])],[X(n),Y(psi[n])]); } st.push([X(50),Y(psi[50])]);
+  path(st,K.prime,6); ctx.globalAlpha=1;
+  const ap=[]; for(let i=0;i<=700;i++){ const x=2.05+47.95*i/700; ap.push([X(x),Y(psiApprox(x,k))]); }
+  path(ap,K.zero,2.5);
+  T(`ondas sumadas: ${Math.floor(k)}`,x0+24,y0+14,{s:24,w:700,c:K.zero});
+  T("escalera de primos",x0+24,y0+50,{s:19,c:K.prime,w:700}); T("(versión que usó Riemann)",x0+24,y0+78,{s:16,c:K.mut});
+ },
+ t=>{ // zeros and waves
+  strip(t,10,0,.5);
+  for(let i=0;i<5;i++){ const yr=100+i*95, a=P(t,.6+i*.6,1.2+i*.6), zy=zY(G[i]); if(!a) continue;
+    path([[300,zy],[370,yr]],K.grid,1,[4,4]); const pts=[]; for(let u=0;u<=560;u+=4) pts.push([380+u,yr+26*Math.sin(u*G[i]*.012-t*3)]);
+    ctx.globalAlpha=a; path(pts,K.zero,2.5); ctx.globalAlpha=1; T(`cero ${i+1}`,380,yr-36,{s:15,c:K.mut,a}); }
+  T("más arriba → vibra más rápido",660,560,{s:18,c:K.mut,al:'center',a:P(t,4,5)});
+ },
+ t=>{ // off-line zero
+  const k=E(P(t,2.5,4.5)); strip(t+10,10,3,Lr(.5,.82,k));
+  const x0=380,w=560,cy=305,A=230, s=A/Math.pow(1000,.82), X=v=>x0+w*v/1000;
+  path([[x0,cy],[x0+w,cy]],K.grid,1);
+  const eu=[],ed=[],on=[],off=[]; for(let i=0;i<=700;i++){ const v=1+999*i/700, r=Math.sqrt(v); eu.push([X(v),cy-r*s]); ed.push([X(v),cy+r*s]); on.push([X(v),cy-r*s*Math.sin(G[3]*Math.log(v))]); off.push([X(v),cy-Math.pow(v,Lr(.5,.82,k))*s*Math.sin(G[3]*Math.log(v))]); }
+  path(eu,K.zero,2,[6,6]); path(ed,K.zero,2,[6,6]);
+  if(k<.05) path(on,K.zero,2); else { ctx.globalAlpha=k; path(off,K.bad,2); ctx.globalAlpha=1; }
+  path([[x0+10,cy+170],[x0+50,cy+170]],K.zero,2,[6,6]); T("límite si la hipótesis es cierta",x0+60,cy+170,{s:17,c:K.zero,w:700});
+  T("¡la onda se escapa!",x0+w-10,70,{s:22,c:K.bad,al:'right',w:700,a:P(t,4.5,5.2)});
+  T(k>.5?"un cero fuera de la línea":"todos los ceros en la línea",190,20,{s:17,c:k>.5?K.bad:K.zero,al:'center',w:700});
+ },
+ t=>{ // claim cards
+  const c=[["Qué afirma","La Hipótesis de Riemann es cierta, y también su versión generalizada"],["Quién","Un matemático trabajando junto con Claude, una IA"],["Cuándo","Terminado el 16 de noviembre de 2026, tras unos 40 días"],["Cómo se comprueba","Con código Lean: un programa que revisa la prueba paso a paso"]];
+  c.forEach(([l,v],i)=>{ const a=E(P(t,.3+i*.9,1.1+i*.9)), x=70+(i%2)*440, y=60+Math.floor(i/2)*260+(1-a)*30;
+    box(x,y,420,230,16,K.soft,null,a); T(l,x+28,y+40,{s:16,c:K.zero,f:K.mono,a}); ctx.globalAlpha=a; wrap(v,x+28,y+90,360,32,{s:25,w:700,f:K.disp}); ctx.globalAlpha=1; });
+ },
+ t=>{ // multiplicity
+  const ax=230, pan=[[180,1,"cruza: cuenta 1"],[500,2,"toca: cuenta 2"],[820,3,"se aplana: cuenta 3"]];
+  pan.forEach(([cx,m,l],i)=>{ const a=P(t,.3+i*1.2,1.3+i*1.2); if(!a) return; path([[cx-130,ax],[cx+130,ax]],K.grid,2);
+    const pts=[]; for(let u=-120;u<=-120+240*a;u+=3){ const z=u/110; pts.push([cx+u,ax-(m===1?z*90:m===2?z*z*150:z*z*z*150)]); }
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,ax+50); ctx.clip(); path(pts,K.zero,3); ctx.restore(); dot(cx,ax,8,K.prime,a); T(l,cx,ax+90,{s:20,w:700,al:'center',a}); });
+  const a2=P(t,5,6); if(!a2) return; T("Una curva de «tamaño 12» toca el eje 12 veces como mucho",500,410,{s:20,al:'center',a:a2});
+  for(let s=0;s<12;s++){ const x=200+s*52, f=P(t,6.5+s*.25,6.8+s*.25), g=Math.floor(s/3); box(x,450,44,44,8,null,K.grid,a2); if(f) box(x,450,44,44,8,g%2?K.zero:K.prime,null,f*.8); }
+  T("Si cada punto cuenta 3, solo caben 4 puntos: 12 ÷ 3 = 4",500,540,{s:21,w:700,c:K.zero,al:'center',a:P(t,9.6,10.4)});
+ },
+ t=>{ // clock vs integers
+  const cx=260,cy=290,r=140, a=P(t,.2,1);
+  ring(cx,cy,r,K.grid,2,a);
+  for(let i=0;i<7;i++){ const ang=-Math.PI/2+i*2*Math.PI/7; T(String(i),cx+Math.cos(ang)*(r+28),cy+Math.sin(ang)*(r+28),{s:20,al:'center',f:K.mono,a}); dot(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r,6,K.zero,a); }
+  const ang=-Math.PI/2+t*1.4; dot(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r,11,K.prime,a);
+  T("mundo de reloj de 7 horas",cx,cy-r-70,{s:20,w:700,al:'center',a}); T("después del 6 viene el 0",cx,cy,{s:16,c:K.mut,al:'center',a});
+  T("aquí sí se puede «derivar»",cx,cy+r+60,{s:19,c:K.ok,w:700,al:'center',a:P(t,2,3)}); T("resuelto (Weil, 1948)",cx,cy+r+90,{s:17,c:K.ok,al:'center',a:P(t,2,3)});
+  const b=P(t,3.5,4.5), x0=560,x1=940, y=290; if(!b) return;
+  path([[x0,y],[x1,y]],K.grid,2); for(let n=0;n<=10;n++){ const x=x0+(x1-x0)*n/10; dot(x,y,5,n===7?K.prime:K.zero,b); T(String(n),x,y+28,{s:15,c:K.mut,al:'center',f:K.mono,a:b}); }
+  T("números enteros",750,150,{s:20,w:700,al:'center',a:b});
+  T("¿la «derivada» de 7?",750,y+100,{s:22,c:K.bad,w:700,al:'center',a:P(t,5.5,6.5)});
+  T("no tiene un sentido obvio",750,y+132,{s:17,c:K.bad,al:'center',a:P(t,5.5,6.5)});
+ },
+ t=>{ // chain of theta lifts
+  if(t<6.5){ const n=Math.min(6,Math.floor(P(t,.4,5)*6.99));
+    for(let i=0;i<n;i++){ const x=60+i*150; box(x,230,110,90,12,K.soft,K.zero); T(`eslabón ${i+1}`,x+55,275,{s:17,al:'center',w:700}); if(i) path([[x-36,275],[x-6,275]],K.zero,2.5); }
+    T(`multiplicidad ganada: ${n}`,500,420,{s:28,w:700,c:K.prime,al:'center',f:K.disp});
+    T("cada eslabón es un «theta lift»: una transformación de un objeto matemático en otro",500,150,{s:18,c:K.mut,al:'center'});
+  } else {
+    const Xv=Math.round(Math.pow(10,Lr(2,6,E(P(t,7,11))))), n=Math.round(Math.sqrt(Xv)), wd=880/n;
+    const vis=Math.min(n,220); for(let i=0;i<vis;i++){ const x=60+i*880/vis; box(x,240,Math.max(2,880/vis-3),70,Math.min(8,880/vis/3),K.zero,null,.85); }
+    T(`X = ${Xv.toLocaleString('es-ES')}`,500,140,{s:28,w:700,al:'center',f:K.disp});
+    T(`eslabones = √X ≈ ${n.toLocaleString('es-ES')}`,500,400,{s:28,w:700,c:K.prime,al:'center',f:K.disp});
+    T("cuanto más grande el problema, más larga la cadena",500,460,{s:18,c:K.mut,al:'center'});
+  }
+ },
+ t=>{ // Lean
+  const pages=Math.floor(Lr(1,22,E(P(t,.2,3))));
+  for(let i=0;i<pages;i++) box(80+i*2,440-i*14,180,24,4,K.bg,K.grid);
+  T("250.000+ páginas",170,500,{s:20,w:700,al:'center'}); T("ilegibles para una persona",170,528,{s:16,c:K.mut,al:'center'});
+  box(420,200,170,170,20,K.soft,K.zero); T("Lean",505,270,{s:34,w:700,al:'center',f:K.disp,c:K.zero}); T("revisor",505,310,{s:17,c:K.mut,al:'center'});
+  for(let j=0;j<6;j++){ const ph=((t*.45+j/6)%1), x=Lr(300,880,ph), y=285; if(t<1.5) continue;
+    const done=x>590; if(x>400&&x<610) continue; box(x-18,y-18,36,36,8,done?K.ok:K.prime,null,.9); if(done) T("✓",x,y+1,{s:20,c:K.bg,al:'center',w:700}); }
+  T("cada paso comprobado",760,230,{s:18,c:K.ok,w:700,al:'center',a:P(t,2.5,3.5)});
+  const a=P(t,5,6); ctx.globalAlpha=a; wrap("Pero Lean no sabe si el enunciado inicial es el correcto. Eso deben revisarlo expertos.",650,420,600,30,{s:20,al:'center',c:K.bad,w:700}); ctx.globalAlpha=1;
+ },
+ t=>{ // what next
+  const it=[[1,"Anuncio publicado (noviembre de 2026)"],[0,"Expertos revisan el código Lean"],[0,"Confirmar que el enunciado es el correcto"],[0,"Una versión escrita, legible y más simple"],[0,"Aceptación de la comunidad matemática"]];
+  it.forEach(([d,s],i)=>{ const a=E(P(t,.3+i*.8,1+i*.8)), y=110+i*90, x=160+(1-a)*-30;
+    if(d){ dot(x,y,20,K.ok,a); T("✓",x,y+1,{s:22,c:K.bg,al:'center',w:700,a}); }
+    else ring(x,y,18,K.mut,2.5,a*(0.55+0.45*Math.sin(t*3+i)));
+    T(s,x+46,y,{s:24,a,w:d?700:400,c:d?K.fg:K.mut}); });
+  T("hecho",820,110,{s:16,c:K.ok,f:K.mono,a:P(t,1,1.6)}); T("pendiente",820,200,{s:16,c:K.mut,f:K.mono,a:P(t,1.8,2.4)});
+ }
+];
+function zY(g){ return 560-g*9.6; }
+function strip(t,count,mover,sig){
+  box(90,40,200,520,8,K.soft,null); path([[190,40],[190,560]],K.zero,1.5,[6,6]);
+  T("0",90,580,{s:15,c:K.mut,al:'center',f:K.mono}); T("½",190,580,{s:15,c:K.zero,al:'center',f:K.mono,w:700}); T("1",290,580,{s:15,c:K.mut,al:'center',f:K.mono});
+  for(let i=0;i<count;i++){ const a=P(t,.4+i*.35,.8+i*.35); if(!a) continue; const m=i===mover&&sig!==.5, x=90+200*(m?sig:.5); dot(x,zY(G[i]),9*a,m?K.bad:K.prime); }
+}
+
+/* ---------- player ---------- */
+const $=id=>document.getElementById(id), reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cur=0, el=0, last=performance.now(), paused=false;
+const nav=$('nav'); GROUPS.forEach((g,gi)=>{ const s=document.createElement('section'); s.innerHTML=`<h3>${g}</h3>`; S.forEach((sc,i)=>{ if(sc.g!==gi) return; const b=document.createElement('button'); b.innerHTML=`<b>${String(i+1).padStart(2,'0')}</b><span>${sc.n}</span>`; b.onclick=()=>go(i); b.dataset.i=i; s.appendChild(b); }); nav.appendChild(s); });
+function go(i){ cur=cl(i,0,S.length-1); el=reduce?S[cur].d:0; $('step').textContent=`Escena ${cur+1} de ${S.length} · ${GROUPS[S[cur].g]}`; $('ct').textContent=S[cur].t; $('cb').textContent=S[cur].b;
+  nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.i===cur))); }
+function setPaused(p){ paused=p; $('play').textContent=p?'Reproducir':'Pausa'; }
+$('prev').onclick=()=>go(cur-1); $('next').onclick=()=>go(cur+1); $('again').onclick=()=>{ go(cur); setPaused(false); };
+$('play').onclick=()=>{ if(paused&&cur===S.length-1&&el>=S[cur].d) go(0); setPaused(!paused); };
+addEventListener('keydown',e=>{ if(e.key==='ArrowRight') go(cur+1); else if(e.key==='ArrowLeft') go(cur-1); else if(e.key===' '&&e.target===document.body){ e.preventDefault(); setPaused(!paused);} });
+function frame(now){ const dt=Math.min(.1,(now-last)/1000); last=now; if(!paused) el+=dt;
+  if($('auto').checked&&!paused&&el>S[cur].d+3){ if(cur<S.length-1) go(cur+1); else setPaused(true); }
+  tokens(); ctx.clearRect(0,0,W,H); ctx.globalAlpha=1; D[cur](Math.min(el,S[cur].d+30));
+  $('bar').style.width=(cl(el/S[cur].d)*100)+'%'; requestAnimationFrame(frame); }
+new ResizeObserver(resize).observe(cv); resize();
+go(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
