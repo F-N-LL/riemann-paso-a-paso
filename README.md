@@ -12,6 +12,18 @@ Es una sola página `index.html` sin dependencias (solo Google Fonts), en españ
 
 > La demostración anunciada no ha sido revisada por expertos independientes. Esta web explica la afirmación; no la confirma.
 
+## De un vistazo
+
+```mermaid
+flowchart TD
+  VI["Visitante"] --> GEO["api/geo.js<br/>país → ES o EN"]
+  GEO --> PG["index.html<br/>una sola página, 16 escenas"]
+  PG --> E1["1 · Los primos<br/>criba y azar aparente"]
+  E1 --> E2["2 · La hipótesis<br/>curva, error, ceros en ½"]
+  E2 --> E3["3 · El documento<br/>noviembre 2026, Lean"]
+  PG -.->|"calcula en el navegador"| CA["primos hasta 100.000<br/>30 ceros de zeta"]
+```
+
 ## English
 
 A 16-scene animated explainer of prime numbers, the Riemann Hypothesis and the November 2026 claim of a proof, for non-mathematicians. Visitors outside Spanish-speaking countries see it in English; use the ES/EN toggle to switch.
